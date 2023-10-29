@@ -95,39 +95,45 @@ class DataStream:
                 count+=1
                 yield dataset
 
-    def get_random_data(self):
-        dataRemaining=list(range(0,len(self.allData)))
+    def get_random_data(self, batch_size=16):
+        dataRemaining = list(range(0, len(self.allData)))
+        
+        X_batch, y_batch = [], []
+        
         while True:
-            arr=np.zeros((2001,2001))
-            randomChoice=random.choice(dataRemaining)
-            data=(self.allData[randomChoice])
+            arr = np.zeros((3000, 3000))
+            randomChoice = random.choice(dataRemaining)
+            data = self.allData[randomChoice]
             try:
-                image=next(data)
+                image = next(data)
             except StopIteration:
                 dataRemaining.remove(randomChoice)
-                if len(dataRemaining)==0:
+                if len(dataRemaining) == 0:
+                    # If there's any data left in the batch, yield it
+                    if X_batch:
+                        yield np.array(X_batch), np.array(y_batch)
                     break
                 else:
                     continue
             
-            # if not i
-
-            strokes=image['strokes']
+            strokes = image['strokes']
             for stroke in strokes:
-                x,y=stroke
-                x=[round(x) for x in x]
-                y=[round(y) for y in y]
-                coords=list(zip(x,y))
-                # for i in range(1, len(coords)):
-                #     p1=coords[i-1]
-                #     p2=coords[i]
-                #     draw_line(arr, p1, p2)
-                for coord in coords:
-                    arr[coord[0]][coord[1]]=1
+                x, y = stroke
+                x = [round(x) for x in x]
+                y = [round(y) for y in y]
+                coords = list(zip(x, y))
+                for i in range(1, len(coords)):
+                    p1 = coords[i-1]
+                    p2 = coords[i]
+                    draw_line(arr, p1, p2)
+                    
+            arr = crop_doodle(arr)
+            X_batch.append(np.rot90(arr, k=3)[..., np.newaxis])
+            y_batch.append(self.fileNames[image['category']])
             
-            arr=crop_doodle(arr)
-            yield (np.rot90(arr, k=3),self.fileNames[image['category']])
-
+            if len(X_batch) == batch_size:
+                yield np.array(X_batch), np.array(y_batch)
+                X_batch, y_batch = [], []
 
 # stream=DataStream()
 

@@ -49,18 +49,18 @@ def binarizeArr(path):
     return binarizeImage
 
 def createPrediction(state):
-    state.prediction = "Loading..."
+    taipy.gui.State.assign(state, "prediction", "Loading...")
     BW = binarizeArr(state.path) #numpy array of 1s and 0s
-    problem = False
 
     #Connect to ML here
     model = tf.keras.models.load_model("model.h5")
-    try:
-        state.prediction = model.predict(BW)
-    except:
-        problem = True
-    if (problem):
-        state.prediction = "Error! Ran out of memory?"
+    currPrediction = model.predict(np.array([BW]))
+    fileNames=['weather.ndjson', 'instrument.ndjson', 'weapon.ndjson', 'plant.ndjson', 'writing_utensil.ndjson', 'construction.ndjson', 'cats.ndjson', 'tool.ndjson', 'accessory.ndjson', 'shape.ndjson', 'one_liner.ndjson', 'terrain.ndjson', 'sport.ndjson', 'fruit.ndjson', 'vehicle.ndjson']
+    result=fileNames[np.argmax(currPrediction[0])].replace('.ndjson','')
+    taipy.gui.State.assign(state, "prediction", result)
+    # except Exception as ex:
+    #     print(type(ex).__name__, ex)
+    #     taipy.gui.State.assign(state, "prediction", "Error! Ran out of memory?")
     print("Create Prediction Done")
 
 Gui(md).run()
